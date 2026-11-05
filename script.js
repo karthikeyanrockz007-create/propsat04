@@ -1,18 +1,17 @@
-
 const FIREBASE_DB_URL =
   "https://zafisat-a2653-default-rtdb.asia-southeast1.firebasedatabase.app";
-
+ 
 function updateClock() {
   const now = new Date();
   const hours = now.getHours() % 12 || 12;
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
-
+ 
   const hourHand = document.querySelector(".hours");
   const minuteHand = document.querySelector(".minutes");
   const secondHand = document.querySelector(".seconds");
   const dateDisplay = document.getElementById("date-display");
-
+ 
   if (hourHand) {
     hourHand.style.transform =
       `rotate(${hours * 30 + minutes * 0.5 + seconds / 120}deg)`;
@@ -33,16 +32,16 @@ function updateClock() {
     });
   }
 }
-
+ 
 function getLocation() {
   const element = document.getElementById("location");
   if (!element) return;
-
+ 
   if (!navigator.geolocation) {
     element.innerText = "Geolocation is not supported.";
     return;
   }
-
+ 
   navigator.geolocation.getCurrentPosition(async position => {
     try {
       const { latitude, longitude } = position.coords;
@@ -50,7 +49,7 @@ function getLocation() {
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
       );
       if (!response.ok) throw new Error("Location lookup failed");
-
+ 
       const data = await response.json();
       const a = data.address || {};
       const place = a.city || a.town || a.village || a.county;
@@ -60,20 +59,20 @@ function getLocation() {
       element.innerText = "Location data unavailable.";
     }
   }, () => {
-    element.innerText = "Location permission denied or unavailable.";
+    element.innerText = "Unable to retrieve location.";
   });
 }
-
+ 
 async function readSensor(path) {
   const response = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
   if (!response.ok) throw new Error(`Firebase HTTP ${response.status}`);
   return response.json();
 }
-
+ 
 async function updateSensor(elementId, path, decimals = 1) {
   const element = document.getElementById(elementId);
   if (!element) return;
-
+ 
   try {
     const value = await readSensor(path);
     element.innerText =
@@ -84,20 +83,16 @@ async function updateSensor(elementId, path, decimals = 1) {
     console.error(`Error reading ${path}:`, error);
   }
 }
-
+ 
 async function fetchSensorData() {
   await Promise.all([
     updateSensor("temperature", "DHT22/Temperature", 1),
-    updateSensor("humidity", "DHT22/Humidity", 1)
+    updateSensor("humidity", "DHT22/Humidity", 1),
+    updateSensor("pressure", "BMP180/Pressure", 2),
+    updateSensor("rain-status", "RainSensor/Status")
   ]);
-
-  const pressure = document.getElementById("pressure");
-  if (pressure) pressure.innerText = "Not connected";
-
-  const rain = document.getElementById("rain-status");
-  if (rain) rain.innerText = "Not connected";
 }
-
+ 
 document.addEventListener("DOMContentLoaded", () => {
   updateClock();
   setInterval(updateClock, 1000);
